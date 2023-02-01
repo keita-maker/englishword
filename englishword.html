@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Page Title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <div id="main">
+            <h1>Register English Word !!</h1>
+            <div id="back">
+              <a href="https://englishword.splitthebill.link/cardgame.html">ゲームに戻る</a>
+            </div>
+            <form>
+                <div id="register">
+                    <input id="id" class="word" type="text" placeholder="英単語を入力">
+                    <input id="name" class="word" type="text" placeholder="日本語を入力">
+                    <input id="submit" class="Button-style" type="button" value="登録">
+                </div>
+            </form>
+            
+            <div id="result"></div>
+            <div id="status"></div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                document.getElementById('submit').addEventListener('click',function(){
+                    var status = document.getElementById('status');
+                    var xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function(){
+                        window.setTimeout(function(){
+                            location.reload();
+                        }, 1000);
+                        
+                    }
+                    var obj = {
+                        Item : {
+                            id: document.getElementById('id').value,
+                            name: document.getElementById('name').value
+                        }
+                    };
+                    var json = JSON.stringify(obj);
+                    xhr.open('POST', 'api url', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    console.log(json);
+                    xhr.send(json);
+                    
+                })
+            })
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                // 取得ボタンクリック時に実行される
+                window.onload = function(){
+                    var result = document.getElementById('result');
+                    var xhr = new XMLHttpRequest();
+                    // 非同期通信時の処理
+                    xhr.onreadystatechange = function(){
+                        if (xhr.readyState === 4){ // 通信完了
+                            if (xhr.status === 200) { // 通信成功
+                                //var data = JSON.parse(xhr.responseText);
+                                var data = xhr.response;
+                                // 結果からキーにアクセス
+                                if (data === null) {
+                                    // ない場合はメッセージ
+                                    result.textContent = 'データが存在しません';
+                                } else {
+                                    // 取得できた場合
+                                    console.log(typeof(data));
+                                    console.log(data)
+                                    var items = data.Items;
+                                    var table1 = document.createElement('table');
+                                    var table2 = document.createElement('table');
+                                    for (var i = 0; i < items.length; i++){
+                                        var tr = document.createElement('tr');
+                                        var td1 = document.createElement('td');
+                                        var td2 = document.createElement('td');
+                                        var td3 = document.createElement('td');
+                                        var delkey = document.createElement('input')
+                                        delkey.type = 'button';
+                                        delkey.className = 'delkey';
+                                        delkey.value = '削除';
+                                        delkey.id = i;
+                                        if(items.length < 9){
+                                            delkey.style.opacity = 0.5
+                                        } else {
+                                            delkey.style.opacity = 1;
+                                        }
+                                        
+                                        var text1 = document.createTextNode(items[i].id);
+                                        var text2 = document.createTextNode(items[i].name);
+                                        
+                                        td1.appendChild(text1);
+                                        td2.appendChild(text2);
+                                        td3.appendChild(delkey)
+                                        // 組み立て
+                                        tr.appendChild(td1);
+                                        tr.appendChild(td2);
+                                        tr.appendChild(td3);
+                                        
+                                        if((i % 2) == 0){
+                                            table1.appendChild(tr)
+                                        } else {
+                                            table2.appendChild(tr)
+                                        }
+                                        
+                                        
+                                    }
+                                    
+                                    result.appendChild(table1);
+                                    result.appendChild(table2);
+                                    
+                                    // <div id="result">の配下を置き換える
+                                    var delkeys = document.querySelectorAll('.delkey')
+                                    delkeys.forEach(function(el) {
+                                        el.addEventListener('click',function(){
+                                            if(items.length < 9){
+                                                return;
+                                            }
+                                            var xhr2 = new XMLHttpRequest();
+                                            var status = document.getElementById('status');
+                                            xhr2.onreadystatechange = function(){
+                                                window.setTimeout(function(){
+                                                    location.reload();
+                                                }, 1000);
+                                            }
+                                            var obj = {
+                                                Item : {
+                                                    id: items[el.id].id,
+                                                    name: items[el.id].name
+                                                }
+                                            };
+                                            var json = JSON.stringify(obj);
+                                            xhr2.open('DELETE', 'api url', true);
+                                            xhr2.setRequestHeader('Content-Type', 'application/json');
+                                            console.log(json);
+                                            xhr2.send(json);
+                                        })
+                                    })
+                                }
+                            }
+                        }
+                    };
+                    // 非同期通信を開始
+                    xhr.responseType = 'json';
+                    xhr.open('GET', 'api url', true);
+                    xhr.send(null);
+                }
+            } ,false);
+        </script>
+        <style>
+            body {
+                background-color: #F0E1C2;
+            }
+            
+            h1 {
+                text-align: center;
+                font-size: 65px;
+            }
+            
+            a {
+                background-color: #CD9D71;
+                display: block;
+                color: white;
+                line-height: 40px;
+                text-decoration: none;
+                width: 130px;
+                height: 40px;
+                border-radius: 8px;
+                text-align: center;
+                font-weight: bold;
+                margin: 33px auto 45px;
+            }
+            
+            #result {
+                display: flex;
+                margin-top: 25px;
+                justify-content: center;
+            }
+            
+            table {
+                font-size: 30px;
+                height: 2px;
+            }
+            
+            td {
+                width: 150px;
+            }
+            #main {
+                margin: 80px auto 0;
+                color: #C79A73;
+                font-family: 'Comic Sans MS', cursive;
+            }
+            
+            #register {
+                text-align: center;
+            }
+            
+            .word {
+                width: 250px;
+                padding: 10px;
+                border-radius: 10px;
+                margin-right: 20px;
+            }
+            
+
+            .Button-style {
+              position: relative;
+              display: inline-block;
+              padding: 0.25em 13px;
+              text-decoration: none;
+              color: #FFF;
+              background: #D3A47B;/*背景色*/
+              border-bottom: solid 2px #d27d00;/*少し濃い目の色に*/
+              border-radius: 4px;/*角の丸み*/
+              box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 2px 2px rgba(0, 0, 0, 0.19);
+              font-weight: bold;
+            }
+            
+            .Button-style:active {
+              border-bottom: solid 2px #fd9535;
+              box-shadow: 0 0 2px rgba(0, 0, 0, 0.30);
+            }
+        </style>
+     </body>
+</html>
+        

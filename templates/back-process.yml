@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  FunctionName:
+    Type: String
+  LambdaRole:
+    Type: String
+Resources:
+  # Lambda
+  Lambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: "englishword-template-2023"
+        S3Key: !Sub "englishword.zip"
+      Description: "Lambda function to get informations of books"
+      FunctionName: !Sub ${FunctionName}
+      Handler: index.handler
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 10
+      Role: !Ref LambdaRole
+  ApiGW:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: "test-api"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+  ApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref ApiGW
+      ParentId: !GetAtt ApiGW.RootResourceId
+      PathPart: !Sub ${FunctionName}
+    DependsOn:
+      - ApiGW
+      - Lambda
+  LambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !Sub ${FunctionName} 
+      Action: 'lambda:InvokeFunction'
+      Principal: 'apigateway.amazonaws.com'
+    DependsOn:
+      - ApiResource
+  ResourceMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref ApiGW
+      ResourceId: !Ref ApiResource
+      AuthorizationType: 'None'
+      HttpMethod: 'POST'
+      Integration:
+        Type: 'AWS'
+        IntegrationHttpMethod: 'POST'
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${FunctionName}/invocations'
+        IntegrationResponses:
+          - StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+    DependsOn: 'LambdaPermission'
+    
+  RestApiMethodGetExampledataOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGW
+      ResourceId: !Ref ApiResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Cache-Control'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'https://xxx.example.com'"
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: 200
+    DependsOn: 'LambdaPermission'
+    
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "sample_table"
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        - AttributeName: "name"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+        - AttributeName: "name"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1

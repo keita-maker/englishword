@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Provision of simple webserver
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label: 
+          default: "S3 and CloudFront Configuration"
+        Parameters: 
+          - BucketName
+          - WebsiteDomainName
+          - CFSSLCertificateId
+          - HostZoneId
+      - Label: 
+          default: "Lambda Configuration"
+        Parameters: 
+          - FunctionName
+          - LambdaRole
+
+Parameters: 
+  BucketName:
+    Type: String
+    Default: "englishword-origin-files"
+  WebsiteDomainName:
+    Type: String
+    Default: "englishword.splitthebill.link"
+  CFSSLCertificateId:
+    Type: String
+    Default: ""
+  HostZoneId:
+    Type: String
+    Default: ""
+  FunctionName:
+    Type: String
+    Description: "Please enter function name"
+  LambdaRole:
+    Type: String
+    Default: ""
+    
+Resources:
+    
+  FRONT:
+      Type: AWS::CloudFormation::Stack
+      Properties:
+        TemplateURL: https://english-template.s3.ap-northeast-1.amazonaws.com/front-process.yml
+        Parameters:
+          BucketName: !Ref BucketName
+          WebsiteDomainName: !Ref WebsiteDomainName
+          CFSSLCertificateId: !Ref CFSSLCertificateId
+          HostZoneId: !Ref HostZoneId
+          
+          
+  BACK:
+      Type: AWS::CloudFormation::Stack
+      Properties:
+        TemplateURL: https://english-template.s3.ap-northeast-1.amazonaws.com/back-process.yml
+        Parameters:
+          FunctionName: !Ref FunctionName
+          LambdaRole: !Ref LambdaRole
+  

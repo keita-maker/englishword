@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Page Title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                background-color: #F0E1C2;
+            }
+            
+            #header {
+                margin: 0 auto;
+                width: 650px;
+                display: flex;
+                justify-content: flex-end;
+            }
+            
+            #footer {
+                margin: 0 auto;
+                width: 850px;
+                display: flex;
+                justify-content: center;
+            }
+            
+            #btnReload {
+                background-color: #9C641C;
+                display: block;
+                color: white;
+                text-decoration: none;
+                width: 120px;
+                height: 50px;
+                border-radius: 8px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 20px;
+            }
+            
+            a {
+                background-color: #CD9D71;
+                display: block;
+                color: white;
+                line-height: 40px;
+                text-decoration: none;
+                width: 90px;
+                height: 40px;
+                border-radius: 8px;
+                text-align: center;
+                font-weight: bold;
+            }
+            #main {
+                margin-top: 50px;
+            }
+            #panel {
+                width: 720px;
+                height: 720px;
+                overflow: hidden;
+                margin: 0 auto;
+            }
+            
+            #hearts {
+                display: flex;
+                width: 720px;
+                margin: 0 auto;
+            }
+            
+            .card {
+                width: 170px;
+                height: 170px;
+                line-height: 170px;
+                border: 1px solid silver;
+                border-radius: 10px;
+                text-align: center;
+                font-size: 20px;
+                font-weight: bold;
+                box-shadow: gray 2px 2px;
+                background: white;
+                float: left;
+                cursor: pointer;
+            }
+            /* 終了時 */
+            .finish {
+                opacity: 0;
+                cursor: default;
+            }
+            
+            .heart {
+              width: 25px;  /* 正方形を作る */
+              height: 25px; /* 正方形を作る */
+              position: relative;/* 基準位置とする */
+            }
+            .heart::before,
+            .heart::after {
+              content: "";  /* 疑似要素に必須 */
+              width: 50%;   /* ハートの丸い部分の大きさにかかわる */
+              height: 80%;  /* ハートの高さにかかわる */
+              background: #E0548E; /* ハートの色 */
+              border-radius: 25px 25px 0 0; 
+              display: block;
+              position: absolute; /* 相対位置に指定 */
+            }
+            .heart::before {
+              transform: rotate(-45deg); /* 左に回転 */
+              left: 14%;                 /* 左からの位置を指定 */
+            }
+            .heart::after {
+              transform: rotate(45deg);  /* 右に回転 */
+              right: 14%;                /* 右からの位置を指定 */
+            }
+            
+            
+        </style>
+    </head>
+    <body>
+      <div id="main">
+        <div id="header">
+          <div id="register">
+            <a href="https://englishword.splitthebill.link/englishword.html">単語登録</a>
+          </div>
+        </div>
+        <div id="hearts"></div>
+        <div id="panel"></div>
+        <div id="footer">
+          <input type="button" value="リセット" id="btnReload">
+        </div>
+        <br>
+        <div id="result"></div>
+      </div>
+        <script>
+
+            var cards = [];
+            // 開始時間
+            var backTimer;
+            // 1枚目かどうかのフラグ   1枚目: true   2枚目: false
+            var flgFirst = true;
+            // 1枚目のカードを格納
+            var cardFirst;
+            // そろえた枚数
+            var countUnit = 0;
+            
+            var gameOver = false;
+            var heartnum = 6;
+            var gameCount = 0;
+            var successCount = 0;
+            var hearts = document.getElementById('hearts');
+            
+            window.onload = function(){
+                makeLife(heartnum)
+                var arr = []
+                var randoms = []
+                var xhr = new XMLHttpRequest();
+                // 非同期通信時の処理
+                xhr.onreadystatechange = function(){
+                    if (xhr.readyState === 4){ // 通信完了
+                        if (xhr.status === 200) { // 通信成功
+                            //var data = JSON.parse(xhr.responseText);
+                            var data = xhr.response;
+                            // 結果からキーにアクセス
+                            if (data === null) {
+                            } else {
+                                // 取得できた場合
+                                console.log(typeof(data));
+                                console.log(data)
+                                var items = data.Items;
+                                console.log(items)
+                                var min = 0, max = items.length - 1;
+                                
+                                for (var i = 0; i < 8; i++){
+                                    while(true){
+                                      var tmpnum = intRandom(min, max);
+                                      if(!randoms.includes(tmpnum)){
+                                         randoms.push(tmpnum);
+                                         break;
+                                      }
+                                    }
+                                    var tmp = {id: i + 'num',name: items[tmpnum].id}
+                                    var tmp2 = {id: i + 'num',name: items[tmpnum].name}
+                                    arr.push(tmp);
+                                    arr.push(tmp2);
+                                }
+                                
+                                console.log(arr)
+                                
+                                shuffle(arr);
+                
+                                var panel = document.getElementById('panel');
+                                console.log(arr.length)
+                                // div要素作成
+                                for (var i = 0; i < arr.length; i++){
+                                    var div = document.createElement('div');
+                                    div.className = 'card back';
+                                    div.index = i;
+                                    div.number = arr[i]['id'];
+                                    div.value = arr[i]['name'];
+                                    div.innerHTML = '';
+                                    div.onclick = turn;
+                                    panel.appendChild(div);
+                                    cards.push(div);
+                                }
+                            }
+                        }
+                    }
+                };
+                // 非同期通信を開始
+                xhr.responseType = 'json';
+                xhr.open('GET', 'api url', true);
+                xhr.send(null);
+                
+                // シャッフル
+                
+            }
+            
+            function intRandom(min, max){
+              return Math.floor( Math.random() * (max - min + 1)) + min;
+            }
+            
+            function shuffle(arr) {
+                var n = arr.length;
+                var temp, i;
+            
+                while (n) {
+                    i = Math.floor(Math.random() * n--);
+                    temp = arr[n];
+                    arr[n] = arr[i];
+                    arr[i] = temp;
+                }
+                return arr;
+            }
+            
+            function turn(e){
+    
+                var div = e.target;
+                
+                // カードのタイマー処理が動作中は return
+                if (backTimer || gameOver) return;
+            
+                // 裏向きのカードをクリックした場合は数字を表示する
+                if (div.innerHTML == ''){
+                    div.className = 'card';
+                    div.innerHTML = div.value; 
+                }else{
+                    // 数字が表示されているカードは return
+                    return;
+                }
+                
+                // 1枚目の処理
+                if (flgFirst){
+                    // cardFirst は2枚目の処理のときに使う
+                    cardFirst = div;
+                    // フラグ変更
+                    flgFirst = false;
+                    
+                // 2枚目の処理
+                }else{
+                    
+                    // 数字が1枚目と一致する場合
+                    if (cardFirst.number == div.number){
+                        successCount++;
+                        // 見えない状態にする
+                        backTimer = setTimeout(function(){
+                            div.className = 'card finish';
+                            cardFirst.className = 'card finish';
+                            backTimer = NaN;
+                            if (countUnit == 10){
+                                console.log('finish');  // timer終了
+                            }
+                            
+                        }, 500)
+                        
+                        if(successCount == 8){
+                            while(hearts.firstChild){
+                              hearts.removeChild( hearts.firstChild );
+                            }
+                            
+                            var successMessage = document.createElement('div');
+                            successMessage.innerHTML = 'Congratulation!!!'
+                            hearts.appendChild(successMessage);
+                            
+                        } else {
+                            heartnum++;
+                            makeLife(heartnum);
+                        }
+                        
+            
+                    // 一致しない場合
+                    }else{  
+                        // カードを裏側に戻す
+                        backTimer = setTimeout(function(){
+                            div.className = 'card back';
+                            div.innerHTML = '';
+                            cardFirst.className = 'card back';
+                            cardFirst.innerHTML = '';
+                            cardFirst = null;
+                            backTimer = NaN;
+                        }, 500);
+                        
+                        if(gameCount > 10){
+                            heartnum = heartnum - 2;
+                        } else {
+                            heartnum--;
+                        }
+                        
+                        makeLife(heartnum);
+                        if(heartnum < 1){
+                            gameOver = true;
+                            
+                            var failMessage = document.createElement('div');
+                            failMessage.innerHTML = 'Game Over…'
+                            hearts.appendChild(failMessage);
+                        }
+                    }
+                    
+                    flgFirst = true;
+                    gameCount++;
+                }  
+            }
+            
+            function makeLife(num){
+                
+                while(hearts.firstChild){
+                  hearts.removeChild( hearts.firstChild );
+                }
+                for (var i = 0; i < num; i++){
+                    var heart = document.createElement('div');
+                    heart.className = 'heart';
+                    hearts.appendChild(heart);
+                }
+            }
+            
+            let btnReload = document.getElementById('btnReload');
+            
+            btnReload.addEventListener('click', function(){
+                location.reload();
+            });
+
+        </script>
+        
+    </body>
+</html>
